@@ -1,0 +1,72 @@
+/* 
+  场景：MUFG模式 + 新规申请（mode=0） + shumokuId="02"
+  前台参数：
+    phFamilyName="ヨンダ", phFirstName="テスト",
+    createStartDate="2026-01-30", createEndDate="2026-02-13",
+    isFG="true", agentId="NVSHYAKUJUUSHI001"
+*/
+SELECT 
+  doc.BRANCH_CODE,
+  search.MUFG_BRANCH_CODE,
+  search.CONTR_INDV_FAMILY_NAME_KANA,
+  search.CONTR_INDV_GIVEN_NAME_KANA,
+  regd.EMPLOYEE_NO,
+  doc.PRODUCT_ID,
+  doc.SHUMOKU_CD,
+  to_char(doc.CREATE_YMD_DATE, 'YYYY-MM-DD') AS CREATE_YMD_DATE,
+  to_char(search.MUFG_CREATE_YMD_DATE, 'YYYY-MM-DD') AS MUFG_CREATE_YMD_DATE,
+  to_char(search.UPDATE_YMD_DATE, 'YYYY-MM-DD') AS UPDATE_YMD_DATE,
+  to_char(search.MUFG_UPDATE_YMD_DATE, 'YYYY-MM-DD') AS MUFG_UPDATE_YMD_DATE,
+  doc.DESIGN_DOC_NO,
+  doc.DESIGN_DOC_STATUS,
+  doc.DESIGN_DOC_ID,
+  doc.DESIGN_ID,
+  sm.SHUMOKU_NAME,
+  sa.PET_NAME,
+  search.CALC_BASE_DATE,
+  doc.CONTENTS,
+  agency.DAIRITEN_ID,
+  agency.DAIRITEN_NAME,
+  app.PROC_STATUS,
+  app.APP_NO,
+  app.APP_ID,
+  usr.CREATOR,
+  doc.DOMAIN_LAST_MOD_ON,
+  doc.EXPIRED,
+  mn.MGMT_NO,
+  -- ... 其余 20+ 字段（按 COLUMNS 定义）
+FROM T_D_DESIGN_DOC doc
+INNER JOIN T_D_DESIGN_DOC_FOR_SEARCH search 
+  ON search.DESIGN_DOC_ID = doc.DESIGN_DOC_ID
+INNER JOIN USER_INFO usr 
+  ON usr.USER_ID = doc.CREATOR
+INNER JOIN T_S_AGENT_REGD_INFO regd 
+  ON regd.USER_ID = doc.CREATOR
+INNER JOIN SHUMOKU_AGENCY sa 
+  ON sa.SHUMOKU_CD = doc.SHUMOKU_CD 
+  AND sa.DAIRITEN_ID = doc.DAIRITEN_ID
+INNER JOIN HW_AGENCY agency 
+  ON agency.DAIRITEN_ID = doc.DAIRITEN_ID
+LEFT JOIN T_S_APP app 
+  ON app.DESIGN_DOC_NO = doc.DESIGN_DOC_NO
+LEFT JOIN USER_INFO appusr 
+  ON appusr.USER_ID = app.CREATOR
+LEFT JOIN T_S_AGENT_REGD_INFO appregd 
+  ON appregd.USER_ID = app.CREATOR
+LEFT JOIN T_S_MGMT_NO mn 
+  ON mn.DESIGN_DOC_NO = doc.DESIGN_DOC_NO
+WHERE 1=1
+  AND search.CONTR_INDV_FAMILY_NAME_KANA = ?           -- "ヨンダ"
+  AND search.CONTR_INDV_GIVEN_NAME_KANA = ?           -- "テスト"
+  AND doc.SHUMOKU_CD IN ('02', '07', '08', 'A5')     -- shumokuId="02" 触发
+  AND search.MUFG_CREATE_YMD_DATE >= ?                -- 2026-01-30
+  AND search.MUFG_CREATE_YMD_DATE <= ?                -- 2026-02-13
+  AND agency.DAIRITEN_ID = ?                          -- "NVSHYAKUJUUSHI001"
+  AND NOT EXISTS (
+    SELECT 1 
+    FROM T_S_APP app_sub 
+    WHERE app_sub.DESIGN_DOC_NO = doc.DESIGN_DOC_NO 
+      AND app_sub.PROC_STATUS = 'APP_DOC_SAVED'
+  )
+ORDER BY doc.DESIGN_DOC_NO DESC
+LIMIT 25 OFFSET 0;
