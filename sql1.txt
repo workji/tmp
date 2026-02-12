@@ -1,0 +1,62 @@
+SELECT 
+  taApp.app_id AS APP_ID,
+  taApp.proc_last_saved_on AS PROC_LAST_SAVED_ON,
+  taApp.proc_status AS PROC_STATUS,
+  taApp.design_doc_no AS DESIGN_DOC_NO,
+  taApp.shouhin_id AS SHOUHIN_ID,
+  taApp.expired AS EXPIRED,
+  taApp.app_no AS APP_NO,
+  taApp.creator AS CREATOR,
+  taApp.update_timestamp AS UPDATE_TIMESTAMP,
+  taAppForSearch.contr_indv_family_name_kana AS CONTR_INDV_FAMILY_NAME_KANA,
+  taAppForSearch.contr_indv_given_name_kana AS CONTR_INDV_GIVEN_NAME_KANA,
+  taAppForSearch.contr_indv_family_name_kanji AS CONTR_INDV_FAMILY_NAME_KANJI,
+  taAppForSearch.contr_indv_given_name_kanji AS CONTR_INDV_GIVEN_NAME_KANJI,
+  taAppForSearch.calc_base_date AS CALC_BASE_DATE,
+  taAppForSearch.insured_indv_family_name_kanji AS INSURED_INDV_FAMILY_NAME_KANJI,
+  taAppForSearch.insured_indv_given_name_kanji AS INSURED_INDV_GIVEN_NAME_KANJI,
+  taAppContents.contents AS CONTENTS,
+  taDataTransfer.transferred_on AS TRANSFERRED_ON,
+  shouhinMst.shouhin_name AS SHOUHIN_NAME,
+  shouhinMst.shumoku_cd AS SHUMOKU_CD,
+  tjPetname.pet_name AS PET_NAME,
+  taClientMenu.proc_finished_on AS CLIENT_PROC_FINISHED_ON,
+  agentRegdInfoId.name AS NAME,
+  tjPetname.pet_name AS petNameAfterApril
+FROM 
+  NVSAPP.T_A_APP taApp
+  INNER JOIN NVSAPP.USER_INFO ON taApp.creator = NVSAPP.USER_INFO.user_id
+  INNER JOIN NVSAPP.HW_AGENCY ON taApp.dairiten_id = NVSAPP.HW_AGENCY.dairiten_id
+  INNER JOIN NVSAPP.T_A_APP_FOR_SEARCH taAppForSearch ON taApp.app_id = taAppForSearch.app_id
+  INNER JOIN NVSAPP.T_A_APP_CONTENTS taAppContents ON taApp.app_id = taAppContents.app_id
+  INNER JOIN NVSAPP.T_A_DATA_TRANSFER taDataTransfer ON taApp.app_id = taDataTransfer.app_id
+  INNER JOIN NVSAPP.SHOUHIN_MST shouhinMst ON taApp.shouhin_id = shouhinMst.shouhin_id
+  LEFT JOIN NVSAPP.T_AGENT_REGD_INFO agentRegdInfoId ON taApp.creator = agentRegdInfoId.user_id
+  INNER JOIN NVSAPP.SHUMOKU_AGENCY ON taApp.dairiten_id = NVSAPP.SHUMOKU_AGENCY.dairiten_id
+  LEFT JOIN NVSAPP.T_S_MGMT_NO_BASE tsMgmtNo ON taApp.design_doc_no = tsMgmtNo.design_doc_no
+  LEFT JOIN NVSAPP.T_A_CLIENT_MENU_BASE taClientMenu ON taApp.app_id = taClientMenu.app_id
+  LEFT JOIN NVSAPP.T_D_DESIGN_DOC_BASE tdDesignDoc ON taApp.design_doc_no = tdDesignDoc.design_doc_no
+  LEFT OUTER JOIN NVSAPP.T_J_PETNAME_BASE tjPetname 
+    ON shouhinMst.plan_id = tjPetname.plan_id 
+    AND taApp.dairiten_id = tjPetname.dairiten_id 
+    AND TO_CHAR(tdDesignDoc.last_saved_on, 'YYYYMMDD') 
+      BETWEEN tjPetname.dl_kaishibi AND tjPetname.dl_shuryobi
+WHERE 
+  taApp.branch_code = ?
+  AND taAppForSearch.contr_indv_family_name_kana = ?
+  AND taAppForSearch.contr_indv_given_name_kana = ?
+  AND taApp.proc_last_saved_on BETWEEN 
+        TO_DATE(?, 'YYYY-MM-DD HH24:MI:SS') 
+        AND TO_DATE(?, 'YYYY-MM-DD HH24:MI:SS')
+  AND taApp.proc_status IN (/* 动态列表 */)
+  AND taApp.design_doc_no = ?
+  AND taApp.creator_class = ?
+  AND NVSAPP.HW_AGENCY.dairiten_id IN (/* 动态列表 */)
+  AND NVSAPP.USER_INFO.ui_syain_no = ?
+  AND NVSAPP.tsMgmtNo.mgmt_no = ?
+  AND taApp.creator = ?
+  AND taApp.cif = ?
+  AND taApp.app_no = ?
+  AND shouhinMst.shumoku_cd = ?
+ORDER BY 
+  taApp.proc_last_saved_on DESC
