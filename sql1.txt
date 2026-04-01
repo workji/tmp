@@ -1,35 +1,69 @@
+-- ==============================================================================
+-- 【终极可执行 SQL】MASSMUTUAL 汎用代理店系统 - 1ヶ月设计书检索 (带物理分页)
+-- ==============================================================================
+
 SELECT * FROM (
     SELECT ROW_NUM_QUERY.*, ROWNUM AS ROW_NUM_ALIAS FROM (
         
-        -- 【最内层：Java 实际动态拼装的业务核心 SQL】
+        -- ----------------------------------------------------------------------
+        -- 【核心骨架】来源：AgwLpfadSksyoListManager.java (硬编码 SELECT 头部)
+        -- ----------------------------------------------------------------------
         SELECT 
-            A.DESIGN_DOC_NO,        -- 设计书编号
-            A.APPL_NO,              -- 申请书编号
-            A.DAIRITEN_ID,          -- 代理店ID
-            A.CREATE_TIMESTAMP,     -- 作成时间
-            A.CONTENTS,             -- 包含保费、险种等详细数据的扩展字段
-            A.PROC_STATUS           -- 状态
-            -- ... 其他几十个字段由 COOL 框架映射
+            A.DESIGN_DOC_ID,
+            A.D_SHOUHIN_ID,
+            A.A_SHOUHIN_ID,
+            A.D_SHUMOKU_CD,
+            A.A_SHUMOKU_CD,
+            A.DAIRITEN_ID,
+            A.DAIRITEN_NAME,
+            A.DESIGN_DOC_NO,
+            A.APP_ID,
+            A.APP_NO,
+            A.DESIGN_DOC_STATUS,
+            A.PROC_STATUS,
+            A.BRANCH_CODE,
+            A.BRANCH_NAME,
+            A.CREATE_TIMESTAMP,
+            A.AGENT_NAME,
+            A.D_PET_NAME,
+            A.A_PET_NAME,
+            A.D_UPDATE_TIMESTAMP,
+            A.A_UPDATE_TIMESTAMP,
+            A.DATA_TRANSFERRED_ON,
+            A.DATA_TRANSFER_STATUS,
+            A.CONTENTS
         FROM 
-            AGW_DESIGN_DOCUMENT A   -- 一时拂核心主表 (COOL 框架注入)
-        WHERE 1=1
-            -- 1. 过滤掉平准拂(期交)特有的外币个人年金商品 (写死在 Java 中的防呆条件)
-            AND SUBSTR(A.D_SHOUHIN_ID, 1, 2) <> 'A1' 
-            AND SUBSTR(A.D_SHOUHIN_ID, 1, 2) <> 'Wcdcm082a.YOTEI_GAIKA_KOJIN_NENKIN'
+            -- 跨库直连！通过 DB Link 伸向核心数据库的庞大视图
+            V_DESIGN_DOC_LIST@MASTAGWNVSAPP_LINK.CORP.LOCAL A 
             
-            -- 2. 权限隔离：当前登录营业员所选择的代理店 (假设 ID 为 3006852)
+        -- ----------------------------------------------------------------------
+        -- 【动态条件】来源：AgwSpecificationStorageImpl.java (纯手工 StringBuffer)
+        -- ----------------------------------------------------------------------
+        WHERE 1=1 
+            -- 1. 防呆过滤：剔除平准拂险种 (引入 Wcdcm082a.java 字典常量)
+            -- 'A1': 外币个人年金, 'A4': 预定利率型外币个人年金
+            AND SUBSTR(A.D_SHOUHIN_ID, 1, 2) <> 'A1' 
+            AND SUBSTR(A.D_SHOUHIN_ID, 1, 2) <> 'A4'
+            
+            -- 2. 权限隔离：当前登录营业员所选择的代理店 ID
             AND A.DAIRITEN_ID = '3006852'
             
-            -- 3. 日期范围：点击【1ヶ月】按钮后，Java 算出的精准到秒的时间
+            -- 3. 日期范围：点击【1ヶ月】按钮后，Wgmaw0010Action 算出的精确时间
             AND A.CREATE_TIMESTAMP >= TO_DATE('20260228000000', 'YYYYMMDDHH24MISS')
             AND A.CREATE_TIMESTAMP <= TO_DATE('20260330235959', 'YYYYMMDDHH24MISS')
             
-            -- 4. 排序规则：按创建时间倒序，编号倒序
+        -- ----------------------------------------------------------------------
+        -- 【排序规则】来源：AgwSpecificationStorageImpl.java (纯手工 StringBuffer)
+        -- ----------------------------------------------------------------------
         ORDER BY 
             A.CREATE_TIMESTAMP DESC, 
             A.DESIGN_DOC_NO DESC
-            
+
+    -- --------------------------------------------------------------------------
+    -- 【外衣包装】来源：CoolSelection.java (自研框架拦截并套入 Oracle 分页语法)
+    --  假设我们当前正在查询第 1 页，每页显示 10 条数据 (offset=0, length=10)
+    -- --------------------------------------------------------------------------
     ) ROW_NUM_QUERY 
-    WHERE ROWNUM <= 10 -- 限制最大读取条数 (offset + length：0 + 10)
+    WHERE ROWNUM <= 10  -- 限制本页结束的游标位置 (offset + length)
 ) 
-WHERE ROW_NUM_ALIAS > 0; -- 限制起始位置 (offset：0)
+WHERE ROW_NUM_ALIAS > 0; -- 限制本页开始的游标位置 (offset)
