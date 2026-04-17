@@ -13,17 +13,17 @@ sequenceDiagram
     end
     
     box rgb(254, 252, 232) 数据库 - 临时区
-    participant DB_WORK as 缓冲表<br>ID_ENTRY_FILE_INPUT_WORK
+    participant DB_WORK as 缓冲表<br>INPUT_WORK
     end
 
     box rgb(245, 243, 255) 数据库 - 历史区
-    participant DB_FILE as 批次头表<br>ID_ENTRY_FILE
-    participant DB_DTIL as 批次明细表<br>ID_ENTRY_FILE_DTIL
+    participant DB_FILE as 批次头表<br>ENTRY_FILE
+    participant DB_DTL as 批次明细表<br>ENTRY_FILE_DTL
     end
 
-    box rgb(255, 241, 242) 数据库 - 核心区 (NVSMST)
+    box rgb(255, 241, 242) 数据库 - 核心区
     participant DB_USER as 核心主表<br>USER_INFO
-    participant DB_AGENT as 募集人与资格底表<br>AGENT / AGTLIC
+    participant DB_AGENT as 代理店底表<br>AGENT_LIC_ALFC
     end
 
     %% ==== 第一阶段：上传与缓冲 ====
@@ -32,9 +32,9 @@ sequenceDiagram
     User->>Web200: 1. 选择CSV文件，点击「実行」
     Web200->>DB_WORK: 2. DELETE (清除当前用户残留的脏数据)
     Web200->>Web200: 3. 内存解析 CSV 每一行数据
-    Web200->>DB_WORK: 4. INSERT (将基础数据塞入缓冲表 INPUT_WORK)
-    Web200->>DB_AGENT: 5. SELECT (LEFT JOIN 查询 AGENT 和 AGTLIC 底表)
-    Web200->>DB_WORK: 6. UPDATE (将查到的底表工号/外币资格更新回 INPUT_WORK)
+    Web200->>DB_WORK: 4. INSERT (将基础数据塞入缓冲表)
+    Web200->>DB_AGENT: 5. SELECT (LEFT JOIN 查询生保资格与底表数据)
+    Web200->>DB_WORK: 6. UPDATE (将查到的底表工号/资格证更新回缓冲表)
     Web200-->>Web201: 7. Session暂存状态，画面强制跳转
     end
 
@@ -45,16 +45,16 @@ sequenceDiagram
     
     Note right of Web201: 开启大事务 (con.BeginTransaction)
     
-    Web201->>DB_FILE: 9. DELETE (从 ID_ENTRY_FILE 删旧批次头)
-    Web201->>DB_FILE: 10. INSERT (插入新批次头到 ID_ENTRY_FILE)
+    Web201->>DB_FILE: 9. DELETE (删旧批次头)
+    Web201->>DB_FILE: 10. INSERT (插入新批次头)
     
-    Web201->>DB_DTIL: 11. DELETE (从 ID_ENTRY_FILE_DTIL 删旧批次明细)
-    Web201->>DB_DTIL: 12. INSERT SELECT (从 INPUT_WORK 全量拷贝数据到 DTIL 作为审计备份)
+    Web201->>DB_DTL: 11. DELETE (删旧批次明细)
+    Web201->>DB_DTL: 12. INSERT SELECT (从 INPUT_WORK 全量拷贝数据到 DTL 作为审计备份)
     
     Note over Web201, DB_USER: 🌟 核心引爆点：四键合一生效
-    Web201->>DB_USER: 13. MERGE INTO (用 INPUT_WORK 去匹配 USER_INFO 主表)
-    DB_USER-->>DB_USER: MATCHED -> UPDATE (更新现有账号的联动信息)
-    DB_USER-->>DB_USER: NOT MATCHED -> INSERT (正式分配新账号 USER_ID)
+    Web201->>DB_USER: 13. MERGE INTO (用 INPUT_WORK 去碰 USER_INFO 主表)
+    DB_USER-->>DB_USER: MATCHED -> UPDATE (更新账号信息)
+    DB_USER-->>DB_USER: NOT MATCHED -> INSERT (新增账号密码)
     
     Note right of Web201: 提交事务 (con.Commit)
     
