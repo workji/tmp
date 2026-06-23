@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>契約内容照会 - ピクセル完全再現版</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Meiryo', 'Hiragino Kaku Gothic ProN', sans-serif; }
+    .empty-cell-fix:empty::before { content: "\00a0"; }
+  </style>
+</head>
+<body class="bg-[#eef0f4] min-h-screen p-4 md:p-8 text-sm">
+
+  <div id="app" class="max-w-5xl mx-auto">
+    
+    <div class="flex items-center mb-6 pl-2">
+      <div class="w-1.5 h-5 bg-[#d9534f] mr-3"></div>
+      <h1 class="text-lg font-bold text-gray-800 tracking-wider">契約内容照会</h1>
+    </div>
+
+    <div v-if="uiData" class="flex space-x-16 mb-4 px-6 border-b-2 border-[#b0b8c4]">
+      <div v-for="tab in uiData.tabs" :key="tab.id"
+           @click="activeTabId = tab.id"
+           :class="[
+             'pb-2 font-bold cursor-pointer relative top-[2px] transition-colors',
+             activeTabId === tab.id ? 'text-gray-800 border-b-2 border-gray-800' : 'text-[#627ca6] border-b-2 border-transparent hover:text-gray-600'
+           ]">
+        {{ tab.label }}
+      </div>
+    </div>
+
+    <div v-if="uiData" class="space-y-6">
+
+      <!-- ========================================== -->
+      <!-- 1. 共通ヘッダーブロック群 (グレー背景と余白を完全に削除) -->
+      <!-- ========================================== -->
+      <div class="space-y-4">
+        <template v-for="(block, bIdx) in uiData.headerBlocks" :key="'hb-'+bIdx">
+          <!-- bg-white と p-[2px] gap-[2px] の組み合わせで、美しい白い罫線を表現 -->
+          <div class="grid grid-cols-12 gap-[2px] p-[2px] bg-white">
+            <template v-for="(item, iIdx) in processGridItems(block)" :key="'hi-'+bIdx+'-'+iIdx">
+              <div v-if="item.isEmptyPadding" :class="[getOuterColClass(item.colSpan), 'bg-[#eaedf2]']"></div>
+              <div v-else :class="[getOuterColClass(item.colSpan), 'flex bg-white']">
+                <div :class="[getInnerWidthClass(item.labelCol), 'bg-[#627ca6] text-white text-xs md:text-sm font-semibold p-2.5 flex items-center justify-center text-center']">
+                  {{ item.label }}
+                </div>
+                <div :class="[getInnerWidthClass(item.valueCol), 'bg-[#eaedf2] text-gray-800 text-xs md:text-sm p-2.5 flex items-center justify-center text-center whitespace-pre-wrap empty-cell-fix']">
+                  {{ item.value }}
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
+
+      <template v-for="(section, sIdx) in currentTabSections" :key="'sec-'+activeTabId+'-'+sIdx">
+        
+        <!-- ===================================== -->
+        <!-- パターンA: card (内部のグレー背景と余白を削除し、密着させる) -->
+        <!-- ===================================== -->
+        <div v-if="section.containerStyle === 'card'" class="mb-6">
+          
+          <div v-if="section.title" class="bg-[#4b669d] text-white px-5 py-2 flex flex-col md:flex-row md:items-center">
+            <h2 class="font-bold tracking-widest">{{ section.title }}</h2>
+          </div>
+
+          <!-- パディング(p-4)を削除し、flex-colで要素を縦に積む -->
+          <div class="border-l-[12px] border-[#4b669d] flex flex-col">
+            <div v-if="section.note" class="text-xs text-gray-700 font-bold px-2 pt-2">{{ section.note }}</div>
+
+            <template v-for="(block, blkIdx) in section.blocks" :key="'blk-'+sIdx+'-'+blkIdx">
+              <!-- ブロックが複数ある場合や、上に注釈がある場合のみ上部マージン(mt-4)を付与 -->
+              <div :class="{'mt-4': blkIdx > 0 || section.note}">
+                <h3 v-if="block.subTitle" class="font-bold text-xs text-gray-800 mb-1.5 ml-2">{{ block.subTitle }}</h3>
+                
+                <!-- 罫線を白に変更 -->
+                <div v-if="block.items && block.items.length > 0" class="grid grid-cols-12 gap-[2px] p-[2px] bg-white">
+                  <template v-for="(item, iIdx) in processGridItems(block.items)" :key="'di-'+iIdx">
+                    <div v-if="item.isEmptyPadding" :class="[getOuterColClass(item.colSpan), 'bg-[#eaedf2]']"></div>
+                    <div v-else :class="[getOuterColClass(item.colSpan), 'flex bg-white']">
+                      <div :class="[getInnerWidthClass(item.labelCol), 'bg-[#627ca6] text-white text-xs md:text-sm font-semibold p-2.5 flex items-center justify-center text-center']">
+                        {{ item.label }}
+                      </div>
+                      <div :class="[getInnerWidthClass(item.valueCol), 'bg-[#eaedf2] text-gray-800 text-xs md:text-sm p-2.5 flex items-center justify-center text-center whitespace-pre-wrap empty-cell-fix']">
+                        {{ item.value }}
+                      </div>
+                    </div>
+                  </template>
+                </div>
+
+              </div>
+            </template>
+            <div v-if="section.footerNote" class="text-xs text-gray-700 font-bold px-2 pt-2 whitespace-pre-wrap">{{ section.footerNote }}</div>
+          </div>
+        </div>
+
+        <!-- ===================================== -->
+        <!-- パターンB: plain -->
+        <!-- ===================================== -->
+        <div v-else-if="section.containerStyle === 'plain'" class="space-y-4 pt-2">
+          
+          <div class="flex items-baseline mb-2">
+            <h2 v-if="section.title" class="font-bold text-sm text-gray-800">{{ section.title }}</h2>
+            <span v-if="section.note" class="ml-4 text-xs text-gray-700 font-bold">{{ section.note }}</span>
+          </div>
+
+          <template v-for="(block, blkIdx) in section.blocks" :key="'blk-plain-'+sIdx+'-'+blkIdx">
+            <div>
+              <h3 v-if="block.subTitle" class="font-bold text-sm text-gray-800 mb-2">{{ block.subTitle }}</h3>
+              
+              <!-- 罫線を白に変更 -->
+              <div v-if="block.items && block.items.length > 0" class="grid grid-cols-12 gap-[2px] p-[2px] bg-white">
+                <template v-for="(item, iIdx) in processGridItems(block.items)" :key="'di-plain-'+iIdx">
+                  <div v-if="item.isEmptyPadding" :class="[getOuterColClass(item.colSpan), 'bg-[#eaedf2]']"></div>
+                  <div v-else :class="[getOuterColClass(item.colSpan), 'flex bg-white']">
+                    <div :class="[getInnerWidthClass(item.labelCol), 'bg-[#627ca6] text-white text-xs md:text-sm font-semibold p-2.5 flex items-center justify-center text-center']">
+                      {{ item.label }}
+                    </div>
+                    <div :class="[getInnerWidthClass(item.valueCol), 'bg-[#eaedf2] text-gray-800 text-xs md:text-sm p-2.5 flex items-center justify-center text-center whitespace-pre-wrap empty-cell-fix']">
+                      {{ item.value }}
+                    </div>
+                  </div>
+                </template>
+              </div>
+
+            </div>
+          </template>
+          <div v-if="section.footerNote" class="text-xs text-gray-700 font-bold mt-2 whitespace-pre-wrap">{{ section.footerNote }}</div>
+        </div>
+      </template>
+
+    </div>
+  </div>
+
+  <script>
+    const { createApp, ref, computed, onMounted } = Vue;
+
+    const MOCK_API_RESPONSE = {
+      "tabs": [
+        { "id": "parties", "label": "契約者情報等" },
+        { "id": "contract", "label": "契約内容" },
+        { "id": "agency", "label": "募集人情報" }
+      ],
+      "headerBlocks": [
+        [
+          { "label": "証券番号", "value": "X2321839", "colSpan": 12, "labelCol": 2, "valueCol": 10 },
+          { "label": "商品名", "value": "つみたてねんきん2（外貨建）" },
+          { "label": "保険種類", "value": "予定利率金利連動型外貨建個人年金保険\n（米ドル建）" },
+          { "label": "ステータス", "value": "有効中" },
+          { "label": "代理店名", "value": "株式会社百十四銀行" }
+        ],
+        [
+          { "label": "申込日", "value": "2025.10.7" },
+          { "label": "入金日", "value": "2025.10.7" },
+          { "label": "責任開始日", "value": "2025.10.7" },
+          { "label": "成立日", "value": "2025.10.20" },
+          { "label": "契約日", "value": "2025.11.1" },
+          { "label": "年金支払開始日", "value": "2038.11.1" }
+        ]
+      ],
+      "tabContents": {
+        "parties": {
+          "sections": [
+            {
+              "containerStyle": "card",
+              "title": "契約者",
+              "blocks": [
+                {
+                  "items": [
+                    { "label": "氏名(漢字)", "value": "内＊＊＊＊" },
+                    { "label": "氏名(カナ)", "value": "ウアアアアアア" },
+                    { "label": "生年月日", "value": "1973.6.17" },
+                    { "label": "性別", "value": "男性" },
+                    { "label": "住所", "value": "〒799-9999\n岡＊＊＊＊＊＊＊＊＊＊＊＊", "colSpan": 12, "labelCol": 2, "valueCol": 10 },
+                    { "label": "被保険者との続柄", "value": "本人", "colSpan": 12, "labelCol": 2, "valueCol": 10 }
+                  ]
+                }
+              ]
+            },
+            {
+              "containerStyle": "card",
+              "title": "被保険者",
+              "blocks": [
+                {
+                  "items": [
+                    { "label": "氏名(漢字)", "value": "内＊＊＊＊" },
+                    { "label": "氏名(カナ)", "value": "ウアアアアアア" },
+                    { "label": "生年月日", "value": "1973.6.17" },
+                    { "label": "性別", "value": "男性" },
+                    { "label": "住所", "value": "〒799-9999\n岡＊＊＊＊＊＊＊＊＊＊＊＊", "colSpan": 12, "labelCol": 2, "valueCol": 10 }
+                  ]
+                }
+              ]
+            },
+            {
+              "containerStyle": "card",
+              "title": "年金受取人",
+              "blocks": [
+                {
+                  "items": [
+                    { "label": "氏名(漢字)", "value": "内＊＊＊＊" },
+                    { "label": "氏名(カナ)", "value": "ウアアアアアア" },
+                    { "label": "生年月日", "value": "1973.6.17" },
+                    { "label": "性別", "value": "男性" },
+                    { "label": "被保険者との続柄", "value": "本人", "colSpan": 12, "labelCol": 2, "valueCol": 10 }
+                  ]
+                }
+              ]
+            },
+            {
+              "containerStyle": "card",
+              "title": "継続年金受取人",
+              "blocks": [
+                {
+                  "items": [
+                    { "label": "氏名(漢字)", "value": "内＊＊＊＊" },
+                    { "label": "氏名(カナ)", "value": "ウアアアアアア" },
+                    { "label": "生年月日", "value": "1973.6.21" },
+                    { "label": "性別", "value": "女性" },
+                    { "label": "年金受取人との続柄", "value": "配偶者", "colSpan": 12, "labelCol": 2, "valueCol": 10 }
+                  ]
+                }
+              ]
+            },
+            {
+              "containerStyle": "card",
+              "title": "死亡給付金(保険金)受取人",
+              "note": "※受取人は1～6名まで表示しています。7名以上の情報は表示しておりません",
+              "blocks": [
+                {
+                  "subTitle": "受取人 1",
+                  "items": [
+                    { "label": "氏名(漢字)", "value": "内＊＊＊＊" },
+                    { "label": "氏名(カナ)", "value": "ウアアアアアア" },
+                    { "label": "生年月日", "value": "1973.6.21" },
+                    { "label": "性別", "value": "女性" },
+                    { "label": "被保険者との続柄", "value": "配偶者" },
+                    { "label": "受取割合", "value": "100%" }
+                  ]
+                },
+                {
+                  "subTitle": "受取人 2",
+                  "items": [] 
+                }
+              ]
+            }
+          ]
+        },
+        "contract": {
+          "sections": [
+            {
+              "containerStyle": "plain",
+              "title": "◆契約内容",
+              "note": "※(10月27日時点 換算レート 152.50円)",
+              "blocks": [
+                {
+                  "items": [
+                    { "label": "指定通貨", "value": "米ドル" },
+                    { "label": "保険料", "value": "20,000 円" },
+                    { "label": "被保険者年齢", "value": "52歳" },
+                    { "label": "払込期間", "value": "62歳" },
+                    { "label": "保険期間", "value": "65歳" },
+                    { "label": "据置期間", "value": "3年" },
+                    { "label": "年金種類", "value": "確定年金" },
+                    { "label": "年金期間", "value": "10年" },
+                    { "label": "年金原資", "value": "未確定" },
+                    { "label": "年金額", "value": "未確定" },
+                    { "label": "死亡給付金※", "value": "132.48 USD\n(20,204 円)" }
+                  ]
+                }
+              ]
+            },
+            {
+              "containerStyle": "plain",
+              "title": "◆契約内容",
+              "note": "※(5月8日時点 換算レート 148.24円)",
+              "footerNote": "※…年金種類が年金総額保証付後厚終身年金の場合のみ",
+              "blocks": [
+                {
+                  "items": [
+                    { "label": "入金保険料（円）", "value": "10,000,000 円" },
+                    { "label": "一時払保険料", "value": "90,983.54 USD\n(為替レート109.91円)" },
+                    { "label": "基本給付金額／\n基本保険金額", "value": "90,983.54 USD" },
+                    { "label": "年金種類", "value": "確定年金" },
+                    { "label": "据置期間", "value": "10年" },
+                    { "label": "年金支払\n開始年齢", "value": "68歳" },
+                    { "label": "保証金額割合", "value": "" },
+                    { "label": "年金支払期間", "value": "20年" },
+                    { "label": "死亡給付金額", "value": "92,973.41 USD\n(13,782,379 円)" },
+                    { "label": "年金額変更日※", "value": "＊＊＊＊＊" },
+                    { "label": "年金額変更年金※", "value": "＊＊＊＊＊" },
+                    { "label": "繰延年金支払期間※", "value": "＊＊＊＊＊" },
+                    { "label": "前期年金支払率※", "value": "＊＊＊＊＊" },
+                    { "label": "年金原資", "value": "101,665.82 USD\n(15,070,942 円)", "colSpan": 12, "labelCol": 2, "valueCol": 10 },
+                    { "label": "年金年額", "value": "5,874.08 USD\n(870,774 円)", "colSpan": 12, "labelCol": 2, "valueCol": 10 },
+                    { "label": "分割年金額", "value": "489.73 USD\n(72,598 円)", "colSpan": 12, "labelCol": 2, "valueCol": 10 },
+                    { "label": "分割支払回数", "value": "年12回", "colSpan": 12, "labelCol": 2, "valueCol": 10 }
+                  ]
+                }
+              ]
+            },
+            {
+              "containerStyle": "plain",
+              "title": "◆特約情報",
+              "blocks": [
+                {
+                  "items": [
+                    { "label": "指定代理請求特約", "value": "あり（特約付加日 2025.11.1）", "colSpan": 12, "labelCol": 6, "valueCol": 6 },
+                    { "label": "円換算払込特約", "value": "あり", "colSpan": 12, "labelCol": 6, "valueCol": 6 },
+                    { "label": "年金円換算支払特約", "value": "あり", "colSpan": 12, "labelCol": 6, "valueCol": 6 },
+                    { "label": "新為替ターゲット特約", "value": "為替ターゲットレート：\n当社の定める前払分割レート", "colSpan": 12, "labelCol": 6, "valueCol": 6 },
+                    { "label": "個人年金保険料税制適格特約", "value": "あり", "colSpan": 12, "labelCol": 6, "valueCol": 6 },
+                    { "label": "情報端末申込特約", "value": "あり", "colSpan": 12, "labelCol": 6, "valueCol": 6 }
+                  ]
+                }
+              ]
+            },
+            {
+              "containerStyle": "plain",
+              "title": "◆払込情報",
+              "blocks": [
+                {
+                  "items": [
+                    { "label": "払込回数", "value": "月払" },
+                    { "label": "払込経路", "value": "口座振替" },
+                    { "label": "継続一括払有無", "value": "なし" },
+                    { "label": "次回P充当年月", "value": "2025.12" },
+                    { "label": "払込保険料", "value": "20,000 円" },
+                    { "label": "領収保険料（円）", "value": "20,000 円" }
+                  ]
+                }
+              ]
+            },
+            {
+              "containerStyle": "plain",
+              "title": "◆積立金および解約返戻金",
+              "note": "(10月27日時点 換算レート 152.50円)",
+              "blocks": [
+                {
+                  "items": [
+                    { "label": "積立金", "value": "0.00 USD\n(0 円)" },
+                    { "label": "市場価格調整額", "value": "0.00 USD\n(0 円)" },
+                    { "label": "解約返戻金額", "value": "0.00 USD\n(0 円)" },
+                    { "label": "解約控除額", "value": "0.00 USD\n(0 円)" },
+                    { "label": "予定利率", "value": "4.26%\n(※責任開始日時点の利率)" },
+                    { "label": "契約日の基準金利", "value": "4.76%" },
+                    { "label": "現時点の基準金利", "value": "4.76%" }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "agency": {
+          "sections": [
+            {
+              "containerStyle": "plain",
+              "title": "＜主募集代理店＞",
+              "blocks": [
+                {
+                  "items": [
+                    { "label": "募集人名", "value": "小＊＊＊＊" },
+                    { "label": "募集人コード", "value": "6420579" },
+                    { "label": "支店", "value": "岡山南支店" },
+                    { "label": "募集割合", "value": "100%" }
+                  ]
+                }
+              ]
+            },
+            {
+              "containerStyle": "plain",
+              "title": "＜共同募集代理店＞",
+              "blocks": [
+                {
+                  "items": [
+                    { "label": "共同募集代理店名", "value": "" },
+                    { "label": "共同募集人名", "value": "" },
+                    { "label": "共同募集人コード", "value": "" },
+                    { "label": "募集割合", "value": "" }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    };
+
+    createApp({
+      setup() {
+        const uiData = ref(null);
+        // 確認しやすいように、初期タブを「契約者情報等(parties)」に変更しています
+        const activeTabId = ref('parties'); 
+
+        onMounted(() => {
+          uiData.value = MOCK_API_RESPONSE;
+        });
+
+        const currentTabSections = computed(() => {
+          if (!uiData.value || !activeTabId.value) return [];
+          return uiData.value.tabContents[activeTabId.value]?.sections || [];
+        });
+
+        const processGridItems = (items) => {
+          if (!items || items.length === 0) return [];
+          
+          let totalSpan = 0;
+          const processed = items.map(item => {
+            const colSpan = item.colSpan || 6; 
+            totalSpan += colSpan;
+            return {
+              ...item,
+              colSpan: colSpan,
+              labelCol: item.labelCol || 4,
+              valueCol: item.valueCol || 8,
+              isEmptyPadding: false
+            };
+          });
+
+          const remainder = totalSpan % 12;
+          if (remainder !== 0) {
+            processed.push({
+              isEmptyPadding: true,
+              colSpan: 12 - remainder
+            });
+          }
+          
+          return processed;
+        };
+
+        const getOuterColClass = (span) => {
+          const map = {
+            6: 'col-span-12 md:col-span-6',
+            12: 'col-span-12 md:col-span-12'
+          };
+          return map[span] || 'col-span-12 md:col-span-6';
+        };
+
+        const getInnerWidthClass = (col) => {
+          const map = {
+            2: 'w-3/12 md:w-2/12', 
+            4: 'w-5/12 md:w-4/12',
+            6: 'w-6/12',
+            8: 'w-7/12 md:w-8/12',
+            10: 'w-9/12 md:w-10/12'
+          };
+          return map[col] || 'w-full';
+        };
+
+        return {
+          uiData,
+          activeTabId,
+          currentTabSections,
+          processGridItems,
+          getOuterColClass,
+          getInnerWidthClass
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
