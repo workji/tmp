@@ -1,0 +1,152 @@
+{
+  "tabs": [
+    { "id": "parties", "label": "契約者情報等" },
+    { "id": "contract", "label": "契約内容" },
+    { "id": "agency", "label": "募集人情報" }
+  ],
+  "headerBlocks": [
+    [
+      { "label": "証券番号", "value": "X2321839", "colSpan": 12, "labelCol": 2, "valueCol": 10 },
+      { "label": "商品名", "value": "つみたてねんきん2（外貨建）" },
+      { "label": "保険種類", "value": "予定利率金利連動型外貨建個人年金保険\n（米ドル建）" },
+      { "label": "ステータス", "value": "有効中" },
+      { "label": "代理店名", "value": "株式会社百十四銀行" }
+    ],
+    [
+      { "label": "申込日", "value": "2025.10.7" },
+      { "label": "入金日", "value": "2025.10.7" },
+      { "label": "責任開始日", "value": "2025.10.7" },
+      { "label": "成立日", "value": "2025.10.20" },
+      { "label": "契約日", "value": "2025.11.1" },
+      { "label": "年金支払開始日", "value": "2038.11.1" }
+    ]
+  ],
+  "tabContents": {
+    "parties": {
+      "sections": [
+        {
+          "containerStyle": "card",
+          "title": "契約者",
+          "blocks": [
+            {
+              "items": [
+                { "label": "氏名(漢字)", "value": "内＊＊＊＊" },
+                { "label": "氏名(カナ)", "value": "ウアアアアアア" },
+                { "label": "生年月日", "value": "1973.6.17" },
+                { "label": "性別", "value": "男性" },
+                { "label": "住所", "value": "〒799-9999\n岡＊＊＊＊＊＊＊＊＊＊＊＊", "colSpan": 12, "labelCol": 2, "valueCol": 10 },
+                { "label": "被保険者との続柄", "value": "本人", "colSpan": 12, "labelCol": 2, "valueCol": 10 }
+              ]
+            }
+          ]
+        },
+        {
+          "containerStyle": "card",
+          "title": "被保険者",
+          "blocks": [
+            {
+              "items": [
+                { "label": "氏名(漢字)", "value": "内＊＊＊＊" },
+                { "label": "氏名(カナ)", "value": "ウアアアアアア" },
+                { "label": "生年月日", "value": "1973.6.17" },
+                { "label": "性別", "value": "男性" },
+                { "label": "住所", "value": "〒799-9999\n岡＊＊＊＊＊＊＊＊＊＊＊＊", "colSpan": 12, "labelCol": 2, "valueCol": 10 }
+              ]
+            }
+          ]
+        },
+        {
+          "containerStyle": "card",
+          "title": "死亡給付金(保険金)受取人",
+          "note": "※受取人は1～6名まで表示しています。7名以上の情報は表示しておりません",
+          "blocks": [
+            {
+              "subTitle": "受取人 1",
+              "items": [
+                { "label": "氏名(漢字)", "value": "内＊＊＊＊" },
+                { "label": "氏名(カナ)", "value": "ウアアアアアア" },
+                { "label": "生年月日", "value": "1973.6.21" },
+                { "label": "性別", "value": "女性" },
+                { "label": "被保険者との続柄", "value": "配偶者" },
+                { "label": "受取割合", "value": "100%" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "contract": {
+      "sections": [
+        {
+          "containerStyle": "plain",
+          "title": "◆契約内容",
+          "note": "※(10月27日時点 換算レート 152.50円)",
+          "blocks": [
+            {
+              "items": [
+                { "label": "指定通貨", "value": "米ドル" },
+                { "label": "保険料", "value": "20,000 円" },
+                { "label": "被保険者年齢", "value": "52歳" },
+                { "label": "払込期間", "value": "62歳" },
+                { "label": "保険期間", "value": "65歳" },
+                { "label": "据置期間", "value": "3年" },
+                { "label": "年金種類", "value": "確定年金" },
+                { "label": "年金期間", "value": "10年" },
+                { "label": "年金原資", "value": "未確定" },
+                { "label": "年金額", "value": "未確定" },
+                { "label": "死亡給付金※", "value": "132.48 USD\n(20,204 円)" }
+              ]
+            }
+          ]
+        },
+        {
+          "containerStyle": "plain",
+          "title": "◆契約内容",
+          "note": "※(5月8日時点 換算レート 148.24円)",
+          "footerNote": "※…年金種類が年金総額保証付後厚終身年金の場合のみ",
+          "blocks": [
+            {
+              "items": [
+                { "label": "入金保険料（円）", "value": "10,000,000 円" },
+                { "label": "一時払保険料", "value": "90,983.54 USD\n(為替レート109.91円)" },
+                { "label": "基本給付金額／\n基本保険金額", "value": "90,983.54 USD" },
+                { "label": "年金種類", "value": "確定年金" },
+                { "label": "据置期間", "value": "10年" },
+                { "label": "年金支払\n開始年齢", "value": "68歳" },
+                { "label": "保証金額割合", "value": "" },
+                { "label": "年金支払期間", "value": "20年" },
+                { "label": "死亡給付金額", "value": "92,973.41 USD\n(13,782,379 円)" },
+                { "label": "年金額変更日※", "value": "＊＊＊＊＊" },
+                { "label": "年金額変更年金※", "value": "＊＊＊＊＊" },
+                { "label": "繰延年金支払期間※", "value": "＊＊＊＊＊" },
+                { "label": "前期年金支払率※", "value": "＊＊＊＊＊" },
+                { "label": "年金原資", "value": "101,665.82 USD\n(15,070,942 円)", "colSpan": 12, "labelCol": 2, "valueCol": 10 },
+                { "label": "年金年額", "value": "5,874.08 USD\n(870,774 円)", "colSpan": 12, "labelCol": 2, "valueCol": 10 },
+                { "label": "分割年金額", "value": "489.73 USD\n(72,598 円)", "colSpan": 12, "labelCol": 2, "valueCol": 10 },
+                { "label": "分割支払回数", "value": "年12回", "colSpan": 12, "labelCol": 2, "valueCol": 10 }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "agency": {
+      "sections": [
+        {
+          "containerStyle": "plain",
+          "title": "＜主募集代理店＞",
+          "blocks": [
+            {
+              "items": [
+                { "label": "募集人名", "value": "小＊＊＊＊" },
+                { "label": "募集人コード", "value": "6420579" },
+                { "label": "支店", "value": "岡山南支店" },
+                { "label": "募集割合", "value": "100%" }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
